@@ -21,11 +21,11 @@ const SearchingTracks = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isloading, setisloading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // const [intialData, setintialData] = useState([])
+  // const [updatedData, setUpdatedData] = useState([])
   const {SearchApiReducerData} = useSelector(
     (store: any) => store.SearchApiReducer,
   );
-//   const [updateData, setUpdateData] = useState<any>(SearchApiReducerData);
-  console.log('>>>>>>>', SearchApiReducerData);
 
   useEffect(() => {
     dispatch(getTrackPlayers(text, currentPage));
@@ -34,7 +34,6 @@ const SearchingTracks = () => {
   const onChageSearchText = (text: any) => {
     setCurrentPage(0);
     settext(text);
-    
   };
   const _renderItem = ({item}: any) => {
     return (

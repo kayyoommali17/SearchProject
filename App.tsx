@@ -1,17 +1,15 @@
 import {StyleSheet} from 'react-native';
 import React from 'react';
 import {Provider} from 'react-redux';
-import SearchingTracks from './src/search';
 import store from './src/reducer/store';
-import SearchAndPagination from './src/search/search';
-import Parent from './parent';
+import SearchAndPagination from './src/NewSearch/search';
 const App = () => {
   return (
     <Provider store={store}>
-      <SearchingTracks />
+      {/* <SearchingTracks /> */}
       {/* <Parent/> */}
       
-       {/* <SearchAndPagination/> */}
+       <SearchAndPagination/>
     </Provider>
   );
 };

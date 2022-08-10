@@ -2,43 +2,40 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import axios from 'axios';
 import {normalize, vh, vw} from '../utilis/dimensions';
 import {IMAGES} from '../utilis/localeimages';
+import {useDispatch, useSelector} from 'react-redux';
+import {getTrackPlayersAction} from './actiont';
 
 const SearchAndPagination = () => {
-  const [data, setdata] = useState<any>([]);
+  const dispatch = useDispatch<any>();
   const [isloading, setisloading] = useState(false);
+  const [IsRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [text, settext] = useState('');
+  const [text, settext] = useState('ed');
+  const {SearchDataReducer} = useSelector(
+    (store: any) => store.NewSearchReducer,
+  );
 
   useEffect(() => {
-    getData(text, currentPage);
-  }, [text, currentPage]);
+    optimize(text, currentPage);
+  }, [text]);
 
-  const getData = async (text: any, page: any) => {
-    axios
-      .get(
-        `https://api.napster.com/v2.2/search/verbose?offset=${page}&apikey=ZWI4MGU4MzYtYTZhOS00NGYyLTk3YzUtMTUwNzFhMGI5ZDY1&query=${text}&per_type_limit=10`,
-      )
-      .then(resp => {
-        console.log('Sucess  >>>>>>>>> ', resp);
-        setdata(data.concat(resp));
-        setisloading(false);
-      })
-      .catch(err => {
-        console.log('Error', err);
-      });
+  const onEndReached = () => {
+    setisloading(true);
+    setCurrentPage(currentPage + 1);
+    dispatch(getTrackPlayersAction(text, currentPage + 1));
+    // setisloading(false)
   };
 
   const _renderItem = ({item}: any) => {
-    console.log('item ..', item?.data?.search?.data?.tracks);
     return (
       <View style={styles.renderItemViewStyle}>
         <Text style={styles.AlbumnameStyle}>{item?.albumName}</Text>
@@ -47,21 +44,53 @@ const SearchAndPagination = () => {
     );
   };
 
+  const debounce = (fun: any, time: number) => {
+    let timeOut: number;
+    return (arg: any, page: number) => {
+      clearTimeout(timeOut);
+      timeOut = setTimeout(() => {
+        fun(arg, page);
+      }, time);
+    };
+  };
+
+  const optimize = React.useCallback(
+    debounce((txt: any, page: any) => {
+      setCurrentPage(1);
+      dispatch({type: 'SEARCH_NEW_TRACK', payload: []});
+      dispatch(getTrackPlayersAction(txt, page));
+    }, 1000),
+    [],
+  );
+
   const renderListFooter = () => {
     return (
       <View>
-        {isloading && <ActivityIndicator size={'large'} color={'red'} />}
+        {isloading && <ActivityIndicator size={'large'} color={'#eedd82'} />}
       </View>
     );
   };
 
-  const onEndReached = () => {
-    setCurrentPage(currentPage + 10);
-    setisloading(true);
+  const wait = (timeout: any) => {
+    return new Promise((resolve: any) => setTimeout(resolve, timeout));
   };
-  const onChageSearchText = (text: any) => {
-    settext(text);
-    // setCurrentPage(0);
+
+  // pull to refresh
+  const onRefresh = React.useCallback(() => {
+    setIsRefreshing(true);
+    wait(2000).then(() => setIsRefreshing(false));
+  }, []);
+
+
+  const _nodataAvliable = () => {
+    return (
+      <View style={styles.noDataAvliableViewStyle}>
+        <Image style={styles.notSearchImageStyle} source={IMAGES.NotClose} />
+        <Text style={styles.NotSearchTextStyle}>
+          {'Please search to get Data '}
+        </Text>
+      </View>
+    );
   };
   return (
     <View style={styles.MainViewStyle}>
@@ -71,18 +100,26 @@ const SearchAndPagination = () => {
           <TextInput
             placeholder="Search here.."
             style={styles.SearchTextStyle}
-            onChangeText={onChageSearchText}
+            onChangeText={txt => settext(txt)}
           />
         </View>
       </View>
       <FlatList
-        data={data}
+        data={SearchDataReducer}
         renderItem={_renderItem}
         keyExtractor={(item, index) => item.id + index}
         ListFooterComponent={renderListFooter}
+        ListEmptyComponent={_nodataAvliable}
         onEndReachedThreshold={0.5}
         onEndReached={onEndReached}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={IsRefreshing}
+            onRefresh={onRefresh}
+            tintColor={'#eedd82'}
+          />
+        }
       />
     </View>
   );
